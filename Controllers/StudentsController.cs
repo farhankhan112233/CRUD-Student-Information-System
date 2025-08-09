@@ -65,6 +65,32 @@ namespace CRUD.Controllers
 
 
         }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetCandidateById(int id)
+        {
+            var candidate = await dbContext.Candidates
+                .Include(c => c.Class)  
+                .Include(c => c.Courses)
+                .FirstOrDefaultAsync(c => c.CandidateId == id);
+
+            if (candidate == null)
+                return NotFound();
+
+         
+            var coursesNames = candidate.Courses != null
+                ? string.Join(", ", candidate.Courses.Select(x => x.Name))
+                : "";
+
+            var candidateDto = new CandidateDto
+            {
+                id = candidate.CandidateId,
+                name = candidate.Name,
+                className = candidate.Class?.Name,
+                courses = coursesNames
+            };
+
+            return Ok(candidateDto);
+        }
         [HttpGet]
         public async Task<IActionResult> GetAllCandidates()
         {
@@ -87,35 +113,35 @@ namespace CRUD.Controllers
                 return BadRequest("Invalid data");
 
             var candidate = await dbContext.Candidates
-     .Include(c => c.Class)
-     .Include(c => c.Courses)
-     .FirstOrDefaultAsync(c => c.CandidateId == id);
+                           .Include(c => c.Class)
+                           .Include(c => c.Courses)
+                           .FirstOrDefaultAsync(c => c.CandidateId == id);
 
-            if (candidate == null) return NotFound();
+            if (candidate == null)
+                return NotFound();
 
+            
             candidate.Name = dto.name;
             candidate.Class.Name = dto.className;
 
-            candidate.Courses.Clear();
-
-            var existingCourse = await dbContext.Courses.FindAsync(dto.id);
-            if (existingCourse != null)
+           
+            var courseToUpdate = await dbContext.Courses.FindAsync(dto.id);
+            if (courseToUpdate != null)
             {
-                candidate.Courses.Add(existingCourse);
+                courseToUpdate.Name = dto.courses; 
             }
             else
             {
-                candidate.Courses.Add(new Course { CourseId = dto.id, Name = dto.courses });
+                return BadRequest("Course not found");
             }
 
             await dbContext.SaveChangesAsync();
-          
 
             return Ok(candidate);
-            
-
-
         }
+
+
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCandidate(int id)
         {
