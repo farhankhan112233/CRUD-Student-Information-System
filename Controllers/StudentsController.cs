@@ -1,8 +1,6 @@
 ﻿using CRUD.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
 
 namespace CRUD.Controllers
 {
@@ -10,154 +8,132 @@ namespace CRUD.Controllers
     [ApiController]
     public class StudentsController : ControllerBase
     {
-        private readonly StudentInformationContext dbContext;
+        private readonly StudentInfoContext dbContext;
 
-        public StudentsController(StudentInformationContext dbContext)
+        public StudentsController(StudentInfoContext dbContext)
         {
             this.dbContext = dbContext;
         }
         [HttpPost]
-        public async Task<IActionResult> SaveCandidate([FromBody] CandidateDto dto)
+        public IActionResult AddCandidates([FromBody] CandidateDto dto)
         {
-            if (dto == null)
+            var classEntity = dbContext.ClassTables.FirstOrDefault(c => c.ClassName == dto.className);
+            if (classEntity == null)
             {
-                return BadRequest("payload null");
+                classEntity = new ClassTable { ClassName = dto.className };
+                dbContext.ClassTables.Add(classEntity);
+                dbContext.SaveChanges();
             }
-            var CourseEntity = new Course
+            var candidate = new CandidateTable
             {
-                CourseId = dto.id,
-                Name = dto.courses
-            };
-            var ClassEntity = new CandidateClass
-            {
-                ClassId = dto.id,
-                Name = dto.className
-            };
-            var CandidateEntity = new Candidate
-            {
-                CandidateId = dto.id,
                 Name = dto.name,
-                Class = ClassEntity,
-                Courses = new List<Course> { CourseEntity }
+                ClassId = classEntity.ClassId
             };
-
-            dbContext.Add(CandidateEntity);
+            dbContext.CandidateTables.Add(candidate);
             dbContext.SaveChanges();
-
-            var result = await dbContext.Candidates
-        .Where(c => c.CandidateId == dto.id)
-        .Select(c => new
-        {
-            id = c.CandidateId,
-            name = c.Name,
-
-            className = c.Class.Name,
-            courses = c.Courses.Select(course => course.Name
-            )
-        })
-        .SingleOrDefaultAsync();
-
-            if (result == null)
-                return NotFound();
-
-            return Ok(result);
-
-
-
-        }
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetCandidateById(int id)
-        {
-            var candidate = await dbContext.Candidates
-                .Include(c => c.Class)  
-                .Include(c => c.Courses)
-                .FirstOrDefaultAsync(c => c.CandidateId == id);
-
-            if (candidate == null)
-                return NotFound();
-
-         
-            var coursesNames = candidate.Courses != null
-                ? string.Join(", ", candidate.Courses.Select(x => x.Name))
-                : "";
-
-            var candidateDto = new CandidateDto
+            foreach (var courseName in dto.courses.Split(',', StringSplitOptions.RemoveEmptyEntries))
             {
-                id = candidate.CandidateId,
-                name = candidate.Name,
-                className = candidate.Class?.Name,
-                courses = coursesNames
-            };
+                var course = new CourseTable
+                {
+                    Name = courseName.Trim(),
+                    CandidateId = candidate.CandidateId
+                };
+                dbContext.CourseTables.Add(course);
+            }
+            dbContext.SaveChanges();
+            var result = dbContext.ClassTables
+                .Include(x => x.CandidateTables)
+                .ThenInclude(x => x.CourseTables)
+                .FirstOrDefault(x => x.ClassId == candidate.ClassId);
+            var response = result.CandidateTables
+                .Select(x => new
+                {
+                    id = x.CandidateId,
+                    name = x.Name,
+                    className = result.ClassName,
+                    courses = String.Join(",", x.CourseTables.Select(c => c.Name))
+                }).FirstOrDefault();
 
-            return Ok(candidateDto);
+            return Ok(response);
+        }
+        [HttpPut("{id}")]
+        public IActionResult UpdateCandidate(int id, [FromBody] CandidateDto dto)
+        {
+            using var transaction = dbContext.Database.BeginTransaction();
+            try {
+                var candidate = dbContext.CandidateTables
+                    .Include(x => x.CourseTables)
+                    .Include(x => x.Class)
+                    .FirstOrDefault(x => x.CandidateId == dto.id);
+
+                if (candidate == null)
+                {
+                    return NotFound("Candidate not found");
+                }
+
+                candidate.Name = dto.name;
+                if (candidate.Class != null)
+                {
+                    candidate.Class.ClassName = dto.className;
+                }
+                dbContext.CourseTables.RemoveRange(candidate.CourseTables);
+                foreach (var courseName in dto.courses.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    dbContext.CourseTables.Add(new CourseTable
+                    {
+                        Name = courseName.Trim(),
+                        CandidateId = candidate.CandidateId
+                    });
+                }
+                dbContext.SaveChanges();
+                transaction.Commit();
+                var response = new
+                {
+                    id = candidate.CandidateId,
+                    name = candidate.Name,
+                    className = candidate.Class?.ClassName,
+                    courses = string.Join(",", dbContext.CourseTables
+               .Where(c => c.CandidateId == candidate.CandidateId)
+               .Select(c => c.Name))
+                };
+                return Ok(response);
+            }catch(Exception ex){
+                transaction.Rollback();
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllCandidates()
+        public  IActionResult GetAllCandidates()
         {
-            var candidates = await dbContext.Candidates
-         .Select(c => new
-         {
-             id = c.CandidateId,
-             name = c.Name,
-             className = c.Class.Name,
-             courses = c.Courses.Select(course => course.Name).ToList()
-         })
-         .ToListAsync();
-            return Ok(candidates);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCandidate(int id, [FromBody] CandidateDto dto)
-        {
-            if (dto == null || id != dto.id)
-                return BadRequest("Invalid data");
-
-            var candidate = await dbContext.Candidates
-                           .Include(c => c.Class)
-                           .Include(c => c.Courses)
-                           .FirstOrDefaultAsync(c => c.CandidateId == id);
-
-            if (candidate == null)
-                return NotFound();
-
-            
-            candidate.Name = dto.name;
-            candidate.Class.Name = dto.className;
-
-           
-            var courseToUpdate = await dbContext.Courses.FindAsync(dto.id);
-            if (courseToUpdate != null)
-            {
-                courseToUpdate.Name = dto.courses; 
-            }
-            else
-            {
-                return BadRequest("Course not found");
-            }
-
-            await dbContext.SaveChangesAsync();
+            var candidate = dbContext.CandidateTables
+                   .Include(x => x.CourseTables)
+                   .Include(x => x.Class)
+                   .Select(x => new
+                   {
+                       id = x.CandidateId,
+                       className = x.Class.ClassName,
+                       name = x.Name,
+                       courses = string.Join(",", x.CourseTables.Select(c => c.Name))
+                   }).ToList();
 
             return Ok(candidate);
+            
         }
-
-
-        
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCandidate(int id)
+        public IActionResult DeleteCandidate(int id)
         {
-            var existing = await dbContext.Candidates.Include(x => x.Class).Include(x => x.Courses).FirstOrDefaultAsync(x => x.CandidateId == id);
-            if(existing == null)
+            var candidate = dbContext.CandidateTables.FirstOrDefault(x => x.CandidateId == id);
+            if(candidate == null)
             {
-               return BadRequest("null");
+                return NotFound("Candidate id Missing");
             }
-            dbContext.Candidates.Remove(existing);
-            await dbContext.SaveChangesAsync();
+            dbContext.Remove(candidate);
+            dbContext.SaveChanges();
+
 
             return Ok();
-
         }
-    }
-}            
-
+    }   }
+           
 
 

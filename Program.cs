@@ -1,3 +1,5 @@
+
+
 using CRUD.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
@@ -9,7 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers().AddJsonOptions(x =>
                 x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-builder.Services.AddDbContext<StudentInformationContext>(options =>
+builder.Services.AddDbContext<StudentInfoContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("defaultConnection")));
 builder.Services.AddControllers();
 builder.Services.AddCors(options =>

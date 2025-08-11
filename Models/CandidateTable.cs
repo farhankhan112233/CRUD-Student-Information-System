@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace CRUD.Models;
 
-public partial class Candidate
+public partial class CandidateTable
 {
     public int CandidateId { get; set; }
 
@@ -11,7 +11,7 @@ public partial class Candidate
 
     public int? ClassId { get; set; }
 
-    public virtual CandidateClass? Class { get; set; }
+    public virtual ClassTable? Class { get; set; }
 
-    public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
+    public virtual ICollection<CourseTable> CourseTables { get; set; } = new List<CourseTable>();
 }
