@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-namespace CRUD.DAL.Models;
+namespace CRUD.Models;
 
 public partial class StudentInfoContext : DbContext
 {

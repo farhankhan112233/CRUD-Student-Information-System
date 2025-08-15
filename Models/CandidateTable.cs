@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CRUD.DAL.Models;
+namespace CRUD.Models;
 
 public partial class CandidateTable
 {
