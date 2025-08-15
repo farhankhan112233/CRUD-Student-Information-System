@@ -23,10 +23,10 @@ namespace CRUD.BLL.Services
 
         public async Task<CandidateResponseDto> AddCandidate(CandidateResponseDto dto)
         {
-            var classEntity = await _classRepo.GetByName(dto.className ?? string.Empty);
+            var classEntity = await _classRepo.GetByName(dto.className);
             if (classEntity == null)
             {
-                classEntity = new ClassTable { ClassName = dto.className ?? string.Empty };
+                classEntity = new ClassTable { ClassName = dto.className};
                 await _classRepo.AddCandidate(classEntity);
             }
 
@@ -58,7 +58,7 @@ namespace CRUD.BLL.Services
 
             candidate.Name = dto.name;
 
-            if (!string.Equals(candidate.Class?.ClassName, dto.className, StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(candidate.Class?.ClassName, dto.className))
             {
                 var classEntity = await _classRepo.GetByName(dto.className);
                 if (classEntity == null)

@@ -40,15 +40,10 @@ namespace CRUD.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCandidate(int id)
         {
-            try
-            {
+            
                 await _candidateService.DeleteCandidate(id);
                 return NoContent();
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound("Candidate id Missing");
-            }
+           
         }
         
     }

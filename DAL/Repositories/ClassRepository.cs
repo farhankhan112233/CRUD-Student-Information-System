@@ -1,6 +1,6 @@
 ﻿using CRUD.DAL.Models;
 using Microsoft.EntityFrameworkCore;
-
+using CRUD.DAL.Repositories;
 namespace CRUD.DAL.Repositories
 {
     public class ClassRepository : IClassRepository
