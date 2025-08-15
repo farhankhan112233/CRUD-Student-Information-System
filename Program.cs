@@ -17,7 +17,7 @@ builder.Services.AddDbContext<StudentInfoContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("defaultConnection")));
 builder.Services.AddControllers();
 
-//Repositoriess
+//Repositories DI Registration
 builder.Services.AddScoped<ICandidateRepository, CandidateRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<ICourseRepository, CourseRepository>();
