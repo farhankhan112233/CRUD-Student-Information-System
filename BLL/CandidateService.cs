@@ -1,6 +1,7 @@
 ﻿using CRUD.DAL.Dto;
 using CRUD.DAL.Models;
 using CRUD.DAL.Repositories;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 
 namespace CRUD.BLL.Services
@@ -47,7 +48,7 @@ namespace CRUD.BLL.Services
                 await _courseRepo.AddCourse(courses);
 
             var result = await _candidateRepo.GetWithRelatedById(candidate.CandidateId);
-            return MapToResponse(result);
+            return Response(result);
         }
 
         public async Task<CandidateResponseDto?> UpdateCandidate(int id, CandidateResponseDto dto)
@@ -86,13 +87,13 @@ namespace CRUD.BLL.Services
             await _candidateRepo.Update(candidate);
 
             var updated = await _candidateRepo.GetWithRelatedById(candidate.CandidateId);
-            return MapToResponse(updated);
+            return Response(updated);
         }
 
         public async Task<List<CandidateResponseDto>> GetAllCandidates()
         {
             var list = await _candidateRepo.GetAllWithRelated();
-            return list.Select(MapToResponse).ToList();
+            return list.Select(Response).ToList();
         }
 
         public async Task DeleteCandidate(int id)
@@ -107,7 +108,7 @@ namespace CRUD.BLL.Services
             await _candidateRepo.Delete(candidate);
         }
 
-        private CandidateResponseDto MapToResponse(CandidateTable? entity)
+        private CandidateResponseDto Response(CandidateTable? entity)
         {
             if (entity == null) return new CandidateResponseDto();
 
@@ -118,6 +119,16 @@ namespace CRUD.BLL.Services
                 className = entity.Class?.ClassName ?? string.Empty,
                 courses = string.Join(",", entity.CourseTables.Select(c => c.Name))
             };
+
+        }
+        public async Task<CandidateResponseDto?> GetCandidateById(int id)
+        {
+            var candidate = await _candidateRepo.GetWithRelatedById(id);
+            if (candidate == null) 
+            {
+                throw new KeyNotFoundException($"Candidate with {id} not found ");
+            }
+            return Response(candidate);
         }
     }
 }

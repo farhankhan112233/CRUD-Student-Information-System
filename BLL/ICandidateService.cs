@@ -8,5 +8,6 @@ namespace CRUD.BLL.Services
         Task<CandidateResponseDto?> UpdateCandidate(int id, CandidateResponseDto dto);
         Task<List<CandidateResponseDto>> GetAllCandidates();
         Task DeleteCandidate(int id);
+        Task<CandidateResponseDto?> GetCandidateById(int id);
     }
 }

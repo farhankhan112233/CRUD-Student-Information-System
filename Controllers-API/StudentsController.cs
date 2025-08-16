@@ -45,6 +45,13 @@ namespace CRUD.Controllers
                 return NoContent();
            
         }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetAllCandidateById(int id)
+        {
+            var candidateId = await _candidateService.GetCandidateById(id);
+            return Ok(candidateId);
+        }
+           
         
     }
 }
